@@ -21,4 +21,6 @@ How to Cite
 
 To cite SIGnature in publications please use:
 
-TBD
+Foundation Model Attributions Reveal Shared Inflammatory Program Across Diseases
+Maxwell P. Gold, Miguel Reyes, Nathaniel Diamant, Tony Kuo, Ehsan Hajiramezanali, Jane W. Newburger, Mary Beth F. Son, Pui Y. Lee, Gabriele Scalia, Aicha BenTaieb, Sharookh B. Kapadia, Anupriya Tripathi, Héctor Corrada Bravo, Graham Heimberg, Tommaso Biancalani
+bioRxiv 2025.06.14.659567; doi: https://doi.org/10.1101/2025.06.14.659567
