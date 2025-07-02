@@ -9,7 +9,8 @@ VOLUME /workspace
 VOLUME /scratch
 
 # Tools
-COPY start-notebook.sh /usr/local/bin/start-notebook
+COPY docker/start-notebook.sh /usr/local/bin/start-notebook
+COPY . /tmp/SIGnature
 
 # Environment
 ENV SCDATA_HOME=/data
@@ -80,8 +81,7 @@ RUN pip3 install \
     tqdm
 
 # Install SIGnature API
-RUN git clone https://github.com/Genentech/SIGnature.git /tmp/SIGnature \
-    && cd /tmp/SIGnature \
+RUN cd /tmp/SIGnature \
     && pip install .
 
 # Entry points
