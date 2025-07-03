@@ -55,8 +55,8 @@ todo_include_todos = True
 # nbsphinx configuration
 # nbsphinx_allow_errors = True
 nbsphinx_thumbnails = {
-    #'notebooks/1. Querying Attributions (MS1 signature)': '_static/query_thumbnail_1.png',
-    #'notebooks/2. Generating Attributions': '_static/generate_thumbnail_1.png',
+    'notebooks/1. Querying Attributions': '_static/query_thumbnail.png',
+    'notebooks/2. Generating Attributions': '_static/generate_thumbnail.png',
 }
 
 # Add any paths that contain templates here, relative to this directory.
