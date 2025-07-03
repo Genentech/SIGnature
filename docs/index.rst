@@ -15,11 +15,9 @@ SIGnature
 Scoring the Importance of Genes using scRNA-seq Foundation Models
 --------------------------------------------------------------------------------
 
-SIGnature is a python package that enables the efficient generation and 
-collection of gene attributions.
+**SIGnature** is a Python package that empowers researchers to rapidly query gene sets across diverse single-cell RNA sequencing (scRNA-seq) datasets through precomputed gene attribution scores.
 
-Attribution scores can be used for rapid gene signature scoring across database
-of 22 million single cell transcriptomes.
+Beyond querying capabilities, SIGnature also enables the generation of attribution scores on novel scRNA-seq data, allowing seamless integration with our collection of annotated studies.
 
 .. image:: _static/overview_image.png
     :width: 75%
@@ -40,7 +38,7 @@ Query Attributions
 Generate attributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:mod:`signature.signature` also provides tools to generate attribution scores on new data that can be integrated with out existing scores.
+:mod:`signature.signature` also provides tools to generate attribution scores on new data that can be integrated with our collection of annotated datasets.
 
 .. image:: _static/generate_image.png
     :width: 75%
