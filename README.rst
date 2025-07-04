@@ -9,7 +9,7 @@ Documentation
 --------------------------------------------------------------------------------
 
 Tutorials and API documentation can be found at:
-https://genentech.github.io/signature/index.html
+https://genentech.github.io/SIGnature/index.html
 
 
 Download & Install

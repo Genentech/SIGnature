@@ -55,8 +55,8 @@ todo_include_todos = True
 # nbsphinx configuration
 # nbsphinx_allow_errors = True
 nbsphinx_thumbnails = {
-    'notebooks/1. Querying Attributions': '_static/query_thumbnail.png',
-    'notebooks/2. Generating Attributions': '_static/generate_thumbnail.png',
+    'notebooks/1-QueryingAttributions': '_static/query_thumbnail.png',
+    'notebooks/2-GeneratingAttributions': '_static/generate_thumbnail.png',
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -72,7 +72,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "signature"
+project = "SIGnature"
 copyright = "2025, Genentech, Inc."
 
 # The version info for the project you're documenting, acts as replacement for
@@ -153,7 +153,7 @@ html_theme = "pydata_sphinx_theme"
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-# html_title = None
+html_title = project
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
