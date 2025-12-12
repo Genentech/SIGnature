@@ -76,7 +76,7 @@ def align_dataset(
     if data.var.shape[0] == 0:
         raise RuntimeError(f"Empty gene space detected.")
 
-    return shell
+    return shell[:, target_gene_order].copy()
 
 
 def lognorm_counts(
@@ -105,7 +105,8 @@ def lognorm_counts(
     if "counts" not in data.layers:
         raise ValueError(f"Raw counts matrix not found in layers['counts'].")
 
-    data.X = data.layers["counts"].copy()
+    data.X = None
+    data.X = data.layers["counts"]
 
     # check for nan in expression data, zero
     if isinstance(data.X, np.ndarray) and np.isnan(data.X).any():
@@ -329,6 +330,7 @@ def categorize_and_sort_by_score(
 
     return df.sort_values(name_column, ascending=ascending)
 
+
 def title_name(s: str) -> str:
     """Return string if all upper case, otherwise return a title version.
 
@@ -354,3 +356,68 @@ def title_name(s: str) -> str:
             s,
         )
 
+
+def normalize_attribution_matrix(
+    matrix: Union["scipy.sparse.csr_matrix", "numpy.ndarray", "torch.Tensor"],
+    target_sum: float = 1e3,
+    npz_path: Optional[str] = None,
+) -> "scipy.sparse.csr_matrix":
+    """
+    Normalizes a matrix so that each row sums to a target value.
+
+    The function handles different input types, converts the matrix to CSR format,
+    normalizes each row by its sum, and then scales the normalized matrix
+    to a specified target sum.
+
+    Parameters
+    ----------
+    matrix: Union[scipy.sparse.csr_matrix, numpy.ndarray, torch.Tensor]
+        The input matrix to be normalized. Can be a dense or sparse matrix,
+        or a torch tensor.
+    target_sum: float, default: 1000
+        The desired sum for each row after normalization.
+    npz_path: Optional[str], default: None
+        Path to save the normalized matrix as a .npz file.
+
+    Returns
+    -------
+    scipy.sparse.csr_matrix
+        The normalized matrix in CSR sparse format.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from scipy.sparse import csr_matrix
+    >>> raw_matrix = np.array([[1, 2, 3], [4, 5, 6]])
+    >>> normalized = normalize_attribution_matrix(raw_matrix, target_sum=100)
+    >>> normalized.sum(axis=1) # Returns a matrix-like object where each row sums to ~100
+    """
+    from scipy.sparse import csr_matrix, diags, save_npz
+    import numpy as np
+    import torch
+
+    # 1. Ensure the matrix is in CSR format
+    if not isinstance(matrix, csr_matrix):
+        if isinstance(matrix, np.ndarray) or isinstance(matrix, torch.Tensor):
+            matrix = csr_matrix(matrix)
+        else:
+            raise TypeError(f"Unsupported matrix type: {type(matrix)}")
+
+    # 2. Calculate row sums
+    row_sums = matrix.sum(axis=1).A1  # .A1 converts to a 1D array
+
+    # 3. Handle rows with a sum of zero to avoid division by zero
+    row_sums[row_sums == 0] = 1
+
+    # 4. Normalize each row
+    inv_row_sums = diags(1 / row_sums).tocsr()
+    normalized_matrix = inv_row_sums.dot(matrix)
+
+    # 5. Multiply by the target sum
+    final_matrix = normalized_matrix.multiply(target_sum)
+
+    # 6. Save to NPZ if a path is provided
+    if npz_path is not None:
+        save_npz(file=npz_path, matrix=final_matrix)
+
+    return final_matrix
