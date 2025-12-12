@@ -17,6 +17,5 @@ finally:
 
 from .SIGnature import SIGnature
 from .meta import Meta
-from .models import SCimilarity
 
-__all__ = ["SIGnature", "Meta", "SCimilarity"]
+__all__ = ["SIGnature", "Meta"]

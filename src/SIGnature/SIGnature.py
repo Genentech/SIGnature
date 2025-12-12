@@ -3,40 +3,27 @@ from typing import Dict, List, Optional, Tuple, Union, Set
 
 class SIGnature:
     """A class for working with single cell gene attributions.
- 
+
     Parameters
     ----------
     gene_order: list
         The gene order for the model.
-    model: nn.Module
-        A pytorch model.
     attributions_tiledb_uri: str
         The URI to the attributions tiledb.
-    use_gpu: bool, default: False
-        Use GPU instead of CPU.
 
     Examples
     --------
-    >>> sig = SIGnature(model=scim.model, gene_order=scim.gene_order)
+    >>> sig = SIGnature(gene_order=gene_order)
     """
 
     def __init__(
         self,
         gene_order: list,
-        model: Optional["nn.Module"] = None,
         attribution_tiledb_uri: Optional[str] = None,
-        use_gpu: bool = False,
     ):
-        assert (model is not None) or (
-            attribution_tiledb_uri is not None
-        ), "Must instantiate with model for generating or tiledb for querying"
         self.gene_order = gene_order
-        self.model = model
         self.attributions_tdb_uri = attribution_tiledb_uri
         self.n_genes = len(self.gene_order)
-        self.use_gpu = use_gpu
-        if self.use_gpu is True:
-            self.model.cuda()
 
     def check_genes(
         self,
@@ -65,95 +52,9 @@ class SIGnature:
         output_gene_list = [x for x in gene_list if x in self.gene_order]
         if print_missing and len(output_gene_list) != len(gene_list):
             missing_genes = set(gene_list).difference(output_gene_list)
-            print(f"The following genes are not included: {','.join(missing_genes)}")
+            print(f"The following genes are not included: {', '.join(missing_genes)}")
 
         return output_gene_list
-
-    def calculate_attributions(
-        self,
-        X: Union["torch.Tensor", "numpy.ndarray", "scipy.sparse.csr_matrix"],
-        buffer_size: int = 1000,
-        target_sum: float = 1e3,
-        disable_tqdm: bool = False,
-        npz_path: Optional[str] = None
-    ) -> "scipy.sparse.csr_matrix":
-        """Calculate gene attributions from a log normalized expression matrix.
-
-        Parameters
-        ----------
-        X: torch.Tensor, numpy.ndarray, scipy.sparse.csr_matrix
-            Log normalized expression matrix.
-        buffer_size: int, default: 1000
-            Buffer size for batches.
-        target_sum: float, default: 1000
-            Target sum for attribution normalization.
-        disable_tqdm: bool, default: False
-            Disable the tqdm progress bar.
-        npz_path: Optional[str], default: None
-            Filename for storing the attribution matrix.
-
-        Returns
-        -------
-        scipy.sparse.csr_matrix
-            A sparse matrix of normalized gene attributions.
-
-        Examples
-        --------
-        >>> attr = sig.calculate_attributions(X=adata.X, buffer_size=500)
-        """
-
-        from captum.attr import IntegratedGradients
-        import numpy as np
-        from scipy.sparse import csr_matrix, diags, save_npz
-        from tqdm import tqdm
-        import torch
-
-
-        assert (X.shape[1] == len(self.gene_order)), "Expression matrix must have same number of features as model"
-
-        attrs_list = []
-        num_cells = X.shape[0]
-        for i in tqdm(range(0, num_cells, buffer_size), disable=disable_tqdm):
-            torch.cuda.empty_cache()
-            X_subset = X[i : i + buffer_size, :]
-            if isinstance(X_subset, np.ndarray):
-                X_subset = torch.Tensor(X_subset)
-            elif isinstance(X_subset, csr_matrix):
-                X_subset = torch.Tensor(X_subset.todense())
-            if next(self.model.parameters()).is_cuda:
-                X_subset = X_subset.cuda()
-
-            
-            weights = self.model(X_subset)
-
-            # Wrapper function around the model that takes the sum of the absolute value of the "weights" multiplied by the function.
-            # Converts multidimensional embedding into single output for IG
-            def model_forward(X_subset):
-                n_repeat = int(len(X_subset) / len(weights))
-                return torch.sum(
-                    torch.abs(weights.repeat(n_repeat, 1) * self.model(X_subset)), dim=1
-                )
-
-            ig = IntegratedGradients(model_forward)
-            attrs = torch.abs(ig.attribute(X_subset)).detach()
-            if next(self.model.parameters()).is_cuda:
-                attrs = attrs.cpu()
-            attrs_list.append(attrs)
-            X_subset = X_subset.detach()
-
-        attrs = csr_matrix(torch.vstack(attrs_list).numpy())
-
-        # normalize to target sum
-        row_sums = attrs.sum(axis=1).A1  # .A1 converts to a 1D array
-        row_sums[row_sums == 0] = 1
-        inv_row_sums = diags(1 / row_sums).tocsr()
-        normalized_matrix = inv_row_sums.dot(attrs)
-        attrs = normalized_matrix.multiply(target_sum)
-
-        if npz_path is not None:
-            save_npz(file=npz_path, matrix=attrs)
-
-        return attrs
 
     def create_tiledb(
         self,
@@ -161,6 +62,9 @@ class SIGnature:
         batch_size: int = 25000,
         attribution_tiledb_uri: Optional[str] = None,
         overwrite: bool = False,
+        attr_name: str = "vals",
+        xdim_name: str = "x",
+        ydim_name: str = "y",
     ):
         """Create a sparse TileDB array from attribution matrix.
 
@@ -174,6 +78,12 @@ class SIGnature:
             The URI to the attributions tiledb.
         overwrite: bool, default: False
             Overwrite the existing TileDB.
+        attr_name: str, default: "vals"
+            Name of the tiledb matrix value attribute.
+        xdim_name: str, default: "x"
+            Name of the tiledb matrix x dimensions.
+        ydim_name: str, default: "y"
+            Name of the tiledb matrix y dimensions.
 
         Examples
         --------
@@ -196,12 +106,16 @@ class SIGnature:
 
         matrix = load_npz(npz_path).tocsr()
 
-        xdim = tiledb.Dim(name="x", domain=(0, matrix.shape[0] - 1), dtype=xdimtype)
-        ydim = tiledb.Dim(name="y", domain=(0, matrix.shape[1] - 1), dtype=ydimtype)
+        xdim = tiledb.Dim(
+            name=xdim_name, domain=(0, matrix.shape[0] - 1), dtype=xdimtype
+        )
+        ydim = tiledb.Dim(
+            name=ydim_name, domain=(0, matrix.shape[1] - 1), dtype=ydimtype
+        )
         dom = tiledb.Domain(xdim, ydim)
 
         attr = tiledb.Attr(
-            name="vals",
+            name=attr_name,
             dtype=value_type,
             filters=tiledb.FilterList([tiledb.GzipFilter()]),
         )
@@ -223,7 +137,9 @@ class SIGnature:
 
         tiledb.SparseArray.create(self.attributions_tdb_uri, schema)
 
-        tdbfile = tiledb.open(self.attributions_tdb_uri, "w")
+        cfg = tiledb.Config()
+        cfg["sm.mem.total_budget"] = 50000000000  # 50G
+        tdbfile = tiledb.open(self.attributions_tdb_uri, "w", config=cfg)
         write_csr_to_tiledb(tdbfile, matrix, value_type, 0, batch_size)
         tdbfile.close()
         optimize_tiledb_array(self.attributions_tdb_uri)
@@ -236,6 +152,9 @@ class SIGnature:
         return_aggregate: bool = True,
         aggregate_type: str = "mean",
         weights: Optional[List[float]] = None,
+        attr_name: str = "vals",
+        xdim_name: str = "x",
+        ydim_name: str = "y",
     ):
         """Get attributions from sparse TileDB array.
 
@@ -254,6 +173,12 @@ class SIGnature:
         weights: Optional[List[float]], default: None
             Weights for each gene when calculating weighted averages or sums.
             Must have the same length as gene_list.
+        attr_name: str, default: "vals"
+            Name of the tiledb matrix value attribute.
+        xdim_name: str, default: "x"
+            Name of the tiledb matrix x dimensions.
+        ydim_name: str, default: "y"
+            Name of the tiledb matrix y dimensions.
 
         Examples
         --------
@@ -278,7 +203,6 @@ class SIGnature:
                 "Not all genes are included in the model. Please run sig.check_genes(gene_list)"
             )
 
-
         # Validate weights if provided
         if weights is not None:
             # Convert weights to numpy array if it's a list
@@ -290,24 +214,25 @@ class SIGnature:
                     f"Length of weights ({len(weights)}) must match length of gene_list ({len(gene_list)})"
                 )
 
-        tdbfile = tiledb.open(self.attributions_tdb_uri, "r")
+        cfg = tiledb.Config()
+        cfg["sm.mem.total_budget"] = 50000000000  # 50G
+        tdbfile = tiledb.open(self.attributions_tdb_uri, "r", config=cfg)
         n_cells = tdbfile.nonempty_domain()[0][1] + 1
 
         gene_indices = []
         for x in gene_list:
             gene_indices.append(self.gene_order.index(x))
 
-        attr = tdbfile.schema.attr(0).name
         if cell_indices is None:
             results = tdbfile.multi_index[:, gene_indices]
             matrix = coo_matrix(
-                (results[attr], (results["x"], results["y"])),
+                (results[attr_name], (results[xdim_name], results[ydim_name])),
                 shape=(n_cells, max(gene_indices) + 1),
             ).tocsr()
         else:
             results = tdbfile.multi_index[cell_indices, gene_indices]
             matrix = coo_matrix(
-                (results[attr], (results["x"], results["y"])),
+                (results[attr_name], (results[xdim_name], results[ydim_name])),
                 shape=(max(cell_indices) + 1, max(gene_indices) + 1),
             ).tocsr()
             matrix = matrix[cell_indices, :]

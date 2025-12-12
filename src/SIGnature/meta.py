@@ -4,13 +4,13 @@ from .utils import (
     subset_by_unique_values,
     subset_by_frequency,
     categorize_and_sort_by_score,
-    title_name
+    title_name,
 )
 
 
 class Meta:
     """A class for working with cell metadata files and output scores
-    
+
     Parameters
     ----------
     df: pandas.Dataframe
@@ -35,7 +35,7 @@ class Meta:
         import pandas as pd
 
         self.df = pd.concat([self.df, df])
-    
+
     def columns(self) -> list:
         """Return columns of current dataframe
 
@@ -62,7 +62,6 @@ class Meta:
         >>> ncell = meta.ncell()
         """
         return self.df.shape[0]
-
 
     def add_hits(
         self,
@@ -285,7 +284,7 @@ class Meta:
         filename: Optional[str] = None,
     ):
         """Plots boxplot and swarmplot for disease
-        
+
         Parameters
         ----------
         df: pandas.DataFrame
@@ -308,7 +307,7 @@ class Meta:
             figure size
         filename: Optional[str], default: None
             file name if want to save file
-        
+
         Examples
         --------
         >>> Meta.samphit_boxplot(df=samphit_df)
