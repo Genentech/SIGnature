@@ -57,6 +57,7 @@ todo_include_todos = True
 nbsphinx_thumbnails = {
     'notebooks/1-QueryingAttributions': '_static/query_thumbnail.png',
     'notebooks/2-GeneratingAttributions': '_static/generate_thumbnail.png',
+    'notebooks/3-IntegratingAttributions': '_static/integrate_thumbnail.png',
 }
 
 # Add any paths that contain templates here, relative to this directory.

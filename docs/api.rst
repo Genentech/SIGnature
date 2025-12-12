@@ -22,6 +22,9 @@ API Reference
     :hidden:
 
     modules/models/scimilarity
+    modules/models/scfoundation
+    modules/models/scvi
+    modules/models/ssl
 
 .. toctree::
     :maxdepth: 2
@@ -44,6 +47,9 @@ Models
 These modules provide functionality for wrapping models to generate attributions.
 
 * :mod:`SIGnature.models.scimilarity`
+* :mod:`SIGnature.models.scfoundation`
+* :mod:`SIGnature.models.scvi`
+* :mod:`SIGnature.models.ssl`
 
 Utilities
 --------------------------------------------------------------------------------
