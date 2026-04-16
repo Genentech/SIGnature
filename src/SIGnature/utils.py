@@ -27,7 +27,8 @@ def align_dataset(
 
     Examples
     --------
-    >>> data = align_dataset(data, gene_order)
+    >>> ca = CellAnnotation(model_path="/opt/data/model")
+    >>> data = align_dataset(data, ca.gene_order)
     """
 
     import anndata
@@ -36,10 +37,15 @@ def align_dataset(
     from scipy.sparse import csr_matrix
 
     # raise an error if not enough genes from target_gene_order exists
-    if sum(data.var.index.isin(target_gene_order)) < gene_overlap_threshold:
+    gene_overlap = sum(data.var.index.isin(target_gene_order))
+    if gene_overlap < gene_overlap_threshold:
         raise RuntimeError(
-            f"Dataset incompatible: gene overlap less than {gene_overlap_threshold}. Check that var.index uses gene symbols."
+            f"Dataset incompatible. Gene overlap of {gene_overlap} less than {gene_overlap_threshold}. Check that var.index uses gene symbols."
         )
+
+    # check if X is None, empty csr_matrix if so
+    if data.X is None:
+        data.X = csr_matrix(data.layers["counts"].shape)
 
     # check if X is dense, convert to csr_matrix if so
     if isinstance(data.X, np.ndarray):
@@ -77,7 +83,6 @@ def align_dataset(
         raise RuntimeError(f"Empty gene space detected.")
 
     return shell[:, target_gene_order].copy()
-
 
 def lognorm_counts(
     data: "anndata.AnnData",

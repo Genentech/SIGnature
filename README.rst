@@ -21,6 +21,10 @@ The SIGnature API is under activate development. The latest development API can 
     cd signature
     pip install -e .
 
+SIGnature release versions can be installed via::
+
+    pip install sc-signature
+
 Precomputed attribution scores can be downloaded from Zenodo:
 https://zenodo.org/communities/signature/
 

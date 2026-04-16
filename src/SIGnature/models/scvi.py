@@ -8,7 +8,6 @@ import pandas as pd
 
 # Captum imports
 from captum.attr import IntegratedGradients, DeepLift, Saliency
-import scvi
 
 from .. import utils
 
@@ -70,6 +69,8 @@ class SCVIWrapper(nn.Module):
 
         This method must be called before calculate_attributions().
         """
+        import scvi
+
         adata.obs["n_counts"] = adata.layers["counts"].sum(axis=1)
         adata.obs["joinid"] = list(range(adata.n_obs))
 
@@ -134,6 +135,8 @@ class SCVIWrapper(nn.Module):
             A scipy.sparse.csr_matrix containing the calculated attributions.
         """
         # The model is loaded here, ensuring it has the correct adata metadata
+
+        import scvi
 
         vae_q = scvi.model.SCVI.load_query_data(adata, self.model_path)
         self.gene_order = vae_q.adata.var.index.tolist()
